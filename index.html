@@ -89,7 +89,7 @@
             transform-style: preserve-3d;
         }
 
-        .card:hover .inner-card {
+        .card:active .inner-card {
             transform: rotateY(180deg);
         }
 
@@ -106,10 +106,21 @@
             border-radius: 8px;
         }
 
+        .card-front>h2{
+            color: white;
+            font-weight: 700;
+        }
+        
         .card-back {
             background-color: #8A2BE2;
             transform: rotateY(180deg);
             padding: 20px;
+            /*
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            */
+
         }
 
         footer {
