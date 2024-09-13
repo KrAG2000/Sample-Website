@@ -46,42 +46,58 @@ function saveContent(querySelector, content, url) {
 }
 
 function applySavedContent() {
-  const url = window.location.href;
-  document.getElementsByTagName("body")[0].querySelectorAll('*').forEach(element => {
-    const querySelector = getQuerySelector(element);
-    fetch('http://localhost:4999/get_saved_content', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({
-        querySelector: querySelector,
-        url: url
-      })
-    })
-      .then(response => {
-        if (!response.ok) {
-          throw new Error('Failed to retrieve saved content');
+  fetch('http://localhost:4999/get_all_content', {
+    method: 'GET',
+    headers: {
+      'Content-Type': 'application/json'
+    }
+  })
+  .then(response => {
+    if (!response.ok) {
+      throw new Error('Failed to retrieve content');
+    }    
+    return response.json();
+  })
+  .then(contents => {
+    console.log("LOGGER:\n", JSON.stringify(contents, null, 2));
+    
+    contents.forEach(item => {
+      const querySelector = item.querySelector;
+      const content = item.content;
+
+      const elements = document.querySelectorAll(querySelector);
+      elements.forEach(element => {
+        if (content.startsWith('<')) {
+          const parser = new DOMParser();
+          const doc = parser.parseFromString(content, 'text/html');
+          const newElement = doc.body.firstChild;
+          element.replaceWith(newElement);
+        } else {
+          element.textContent = content;
         }
-        return response.json();
-      })
-      .then(data => {
-        const savedContent = data.content;
-        if (savedContent) {
-          if (savedContent.startsWith('<')) {
-            const parser = new DOMParser();
-            const doc = parser.parseFromString(savedContent, 'text/html');
-            const newElement = doc.body.firstChild;
-            element.replaceWith(newElement);
-          } else {
-            element.textContent = savedContent;
-          }
-        }
-      })
-      .catch(error => {
-        console.error('Error applying saved content:', error);
       });
+    });
+  })
+  .catch(error => {
+    console.error('Error applying saved content:', error);
   });
+}
+
+function getUserVariant(userId) {
+  return fetch(`http://localhost:4999/get_variant`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({ user_id: userId })
+  })
+  .then(response => {
+    if (!response.ok) {
+      throw new Error('Failed to get variant');
+    }
+    return response.json();
+  })
+  .then(data => data.variant);
 }
 
 (function () {
@@ -92,7 +108,18 @@ function applySavedContent() {
   }
   console.log("User ID:", userId);
 
-  applySavedContent();
+  // applySavedContent();
+
+  getUserVariant(userId)
+    .then(variant => {
+      if (variant === "B") {
+        applySavedContent();
+      }
+    })
+    .catch(error => {
+      console.error('Error getting variant:', error);
+    });
+
 
   document.addEventListener('click', function (event) {
     const clickedElement = event.target;
