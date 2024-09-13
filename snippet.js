@@ -31,9 +31,17 @@ function saveContent(querySelector, content, url) {
       url: url
     })
   })
-  .then(response => response.json())
+  .then(response => {
+    if (!response.ok) {
+      throw new Error('Failed to save content');
+    }
+    return response.json();
+  })
   .then(data => {
     console.log("Content saved:", data);
+  })
+  .catch(error => {
+    console.error('Error saving content:', error);
   });
 }
 
@@ -41,21 +49,38 @@ function applySavedContent() {
   const url = window.location.href;
   document.querySelectorAll('*').forEach(element => {
     const querySelector = getQuerySelector(element);
-    fetch(`http://localhost:5000/get_saved_content?querySelector=${encodeURIComponent(querySelector)}&url=${encodeURIComponent(url)}`)
-      .then(response => response.json())
-      .then(data => {
-        const savedContent = data.content;
-        if (savedContent) {
-          if (savedContent.startsWith('<')) {
-            const parser = new DOMParser();
-            const doc = parser.parseFromString(savedContent, 'text/html');
-            const newElement = doc.body.firstChild;
-            element.replaceWith(newElement);
-          } else {
-            element.textContent = savedContent;
-          }
+    fetch('http://localhost:5000/get_saved_content', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        querySelector: querySelector,
+        url: url
+      })
+    })
+    .then(response => {
+      if (!response.ok) {
+        throw new Error('Failed to retrieve saved content');
+      }
+      return response.json();
+    })
+    .then(data => {
+      const savedContent = data.content;
+      if (savedContent) {
+        if (savedContent.startsWith('<')) {
+          const parser = new DOMParser();
+          const doc = parser.parseFromString(savedContent, 'text/html');
+          const newElement = doc.body.firstChild;
+          element.replaceWith(newElement);
+        } else {
+          element.textContent = savedContent;
         }
-      });
+      }
+    })
+    .catch(error => {
+      console.error('Error applying saved content:', error);
+    });
   });
 }
 
@@ -74,56 +99,74 @@ function applySavedContent() {
     const querySelector = getQuerySelector(clickedElement);
     const originalText = clickedElement.textContent;
 
-    fetch(`http://localhost:4999/get_variant?user_id=${userId}`)
-      .then(response => {
-        console.log("Response from get_variant:", response);
-        return response.json();
+    fetch(`http://localhost:4999/get_variant`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        user_id: userId
       })
-      .then(data => {
-        const variant = data.variant;
-        console.log("Data from get_variant:", data);
-        console.log("Variant:", variant);
+    })
+    .then(response => {
+      if (!response.ok) {
+        throw new Error('Failed to get variant');
+      }
+      return response.json();
+    })
+    .then(data => {
+      const variant = data.variant;
+      console.log("Data from get_variant:", data);
+      console.log("Variant:", variant);
 
-        if (variant === "B") {
-          console.log("Variant B detected, proceeding with rephrase");
+      if (variant === "B") {
+        console.log("Variant B detected, proceeding with rephrase");
 
-          fetch('http://localhost:5000/rephrase', {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({
-              querySelector: querySelector,
-              content: originalText
-            })
+        fetch('http://localhost:5000/rephrase', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            querySelector: querySelector,
+            content: originalText
           })
-          .then(response => {
-            console.log("Response from rephrase:", response);
-            return response.json();
-          })
-          .then(data => {
-            const rephrasedText = data.personalisedContent;
-            const elementToReplace = document.querySelector(data.querySelector);
+        })
+        .then(response => {
+          if (!response.ok) {
+            throw new Error('Failed to rephrase content');
+          }
+          return response.json();
+        })
+        .then(data => {
+          const rephrasedText = data.personalisedContent;
+          const elementToReplace = document.querySelector(data.querySelector);
 
-            if (elementToReplace) {
-              if (typeof rephrasedText === 'string') {
-                console.log("Updating text content with:", rephrasedText);
-                elementToReplace.textContent = rephrasedText;
-                saveContent(data.querySelector, rephrasedText, window.location.href);
-              } else if (rephrasedText instanceof HTMLElement) {
-                console.log("Replacing element with:", rephrasedText.outerHTML);
-                elementToReplace.replaceWith(rephrasedText);
-                saveContent(data.querySelector, rephrasedText.outerHTML, window.location.href);
-              } else {
-                console.error("Unexpected type of rephrasedText:", typeof rephrasedText);
-              }
+          if (elementToReplace) {
+            if (typeof rephrasedText === 'string') {
+              console.log("Updating text content with:", rephrasedText);
+              elementToReplace.textContent = rephrasedText;
+              saveContent(data.querySelector, rephrasedText, window.location.href);
+            } else if (rephrasedText instanceof HTMLElement) {
+              console.log("Replacing element with:", rephrasedText.outerHTML);
+              elementToReplace.replaceWith(rephrasedText);
+              saveContent(data.querySelector, rephrasedText.outerHTML, window.location.href);
             } else {
-              console.error("Element not found with the provided querySelector");
+              console.error("Unexpected type of rephrasedText:", typeof rephrasedText);
             }
-          });
-        } else {
-          console.log("Variant is not B:", variant);
-        }
-      });
+          } else {
+            console.error("Element not found with the provided querySelector");
+          }
+        })
+        .catch(error => {
+          console.error('Error during rephrasing:', error);
+        });
+      } else {
+        console.log("Variant is not B:", variant);
+      }
+    })
+    .catch(error => {
+      console.error('Error getting variant:', error);
+    });
   });
 })();
