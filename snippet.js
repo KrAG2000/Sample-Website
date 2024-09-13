@@ -19,6 +19,46 @@ function getQuerySelector(element) {
   return path.join(' > ');
 }
 
+function saveContent(querySelector, content, url) {
+  fetch('http://localhost:5000/save_content', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({
+      querySelector: querySelector,
+      content: content,
+      url: url
+    })
+  })
+  .then(response => response.json())
+  .then(data => {
+    console.log("Content saved:", data);
+  });
+}
+
+function applySavedContent() {
+  const url = window.location.href;
+  document.querySelectorAll('*').forEach(element => {
+    const querySelector = getQuerySelector(element);
+    fetch(`http://localhost:5000/get_saved_content?querySelector=${encodeURIComponent(querySelector)}&url=${encodeURIComponent(url)}`)
+      .then(response => response.json())
+      .then(data => {
+        const savedContent = data.content;
+        if (savedContent) {
+          if (savedContent.startsWith('<')) {
+            const parser = new DOMParser();
+            const doc = parser.parseFromString(savedContent, 'text/html');
+            const newElement = doc.body.firstChild;
+            element.replaceWith(newElement);
+          } else {
+            element.textContent = savedContent;
+          }
+        }
+      });
+  });
+}
+
 (function () {
   let userId = localStorage.getItem("user_id");
   if (!userId) {
@@ -26,6 +66,8 @@ function getQuerySelector(element) {
     localStorage.setItem("user_id", userId);
   }
   console.log("User ID:", userId);
+
+  applySavedContent();
 
   document.addEventListener('click', function (event) {
     const clickedElement = event.target;
@@ -67,9 +109,11 @@ function getQuerySelector(element) {
               if (typeof rephrasedText === 'string') {
                 console.log("Updating text content with:", rephrasedText);
                 elementToReplace.textContent = rephrasedText;
+                saveContent(data.querySelector, rephrasedText, window.location.href);
               } else if (rephrasedText instanceof HTMLElement) {
                 console.log("Replacing element with:", rephrasedText.outerHTML);
                 elementToReplace.replaceWith(rephrasedText);
+                saveContent(data.querySelector, rephrasedText.outerHTML, window.location.href);
               } else {
                 console.error("Unexpected type of rephrasedText:", typeof rephrasedText);
               }
