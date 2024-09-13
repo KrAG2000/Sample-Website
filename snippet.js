@@ -41,18 +41,32 @@ function getQuerySelector(element) {
 }
 
 (function () {
-  let userId = localStorage.getItem("user_id");
-  if (!userId) {
-    userId = Date.now().toString();
-    localStorage.setItem("user_id", userId);
-  }
+ let userId = localStorage.getItem("user_id");
+    if (!userId) {
+      userId = Date.now().toString();
+      localStorage.setItem("user_id", userId);
+    }
+    console.log("User ID:", userId);
 
-  document.addEventListener('click', function (event) {
-    const clickedElement = event.target;
-    const querySelector = getQuerySelector(clickedElement);
-    const originalText = clickedElement.textContent;
+    document.addEventListener('click', function (event) {
+      const clickedElement = event.target;
+      const querySelector = getQuerySelector(clickedElement);
+      const originalText = clickedElement.textContent;
 
-    fetch('http://localhost:5000/rephrase', {
+      fetch(`http://localhost:4999/get_variant?user_id=${userId}`)
+        .then(response => {
+          console.log("Response from get_variant:", response);
+          return response.json();
+        })
+        .then(data => {
+          const variant = data.variant;
+          console.log("Data from get_variant:", data);
+          console.log("Variant:", variant);
+
+          if (variant === "B") {
+            console.log("Variant B detected, proceeding with rephrase");
+
+            fetch('http://localhost:5000/rephrase', {
               method: 'POST',
               headers: {
                 'Content-Type': 'application/json'
@@ -87,5 +101,7 @@ function getQuerySelector(element) {
           } else {
             console.log("Variant is not B:", variant);
           }
-     });
-})();
+        });
+    });
+  }
+});
