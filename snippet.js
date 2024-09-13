@@ -20,7 +20,7 @@ function getQuerySelector(element) {
 }
 
 function saveContent(querySelector, content, url) {
-  fetch('http://localhost:4999/save_content', {
+  fetch('https://web-personaliser.onrender.com/save_content', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json'
@@ -46,7 +46,7 @@ function saveContent(querySelector, content, url) {
 }
 
 function applySavedContent() {
-  fetch('http://localhost:4999/get_all_content', {
+  fetch('https://web-personaliser.onrender.com/get_all_content', {
     method: 'GET',
     headers: {
       'Content-Type': 'application/json'
@@ -84,7 +84,7 @@ function applySavedContent() {
 }
 
 function getUserVariant(userId) {
-  return fetch(`http://localhost:4999/get_variant`, {
+  return fetch(`https://web-personaliser.onrender.com/get_variant`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json'
@@ -126,7 +126,7 @@ function getUserVariant(userId) {
     const querySelector = getQuerySelector(clickedElement);
     const originalText = clickedElement.textContent;
 
-    fetch(`http://localhost:4999/get_variant`, {
+    fetch(`https://web-personaliser.onrender.com/get_variant`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json'
@@ -149,7 +149,7 @@ function getUserVariant(userId) {
         if (variant === "B") {
           console.log("Variant B detected, proceeding with rephrase");
 
-          fetch('http://localhost:4999/rephrase', {
+          fetch('https://web-personaliser.onrender.com/rephrase', {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json'
