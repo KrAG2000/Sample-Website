@@ -47,8 +47,7 @@ function saveContent(querySelector, content, url) {
 
 function applySavedContent() {
   const url = window.location.href;
-  const bodyElement = document.getElementsByTagName("body")[0];
-  bodyElement.querySelectorAll('*').forEach(element => {
+  document.getElementsByTagName("body")[0].querySelectorAll('*').forEach(element => {
     const querySelector = getQuerySelector(element);
     fetch('http://localhost:4999/get_saved_content', {
       method: 'POST',
