@@ -52,7 +52,7 @@ function getQuerySelector(element) {
     const querySelector = getQuerySelector(clickedElement);
     const originalText = clickedElement.textContent;
 
-    fetch(`http://localhost:5000/get_variant?user_id=${userId}`)
+    fetch(`http://localhost:4999/get_variant?user_id=${userId}`)
       .then(response => response.json())
       .then(data => {
         const variant = data.variant;
