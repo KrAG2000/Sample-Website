@@ -52,28 +52,40 @@ function getQuerySelector(element) {
     const querySelector = getQuerySelector(clickedElement);
     const originalText = clickedElement.textContent;
 
-    fetch(`http://localhost:4999/get_variant?user_id=${userId}`)
-      .then(response => response.json())
-      .then(data => {
-        const variant = data.variant;
-
-        if (variant === "B") {
-          fetch('http://localhost:5000/rephrase', {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({
-              querySelector: querySelector,
-              content: originalText
+    fetch('http://localhost:5000/rephrase', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json'
+              },
+              body: JSON.stringify({
+                querySelector: querySelector,
+                content: originalText
+              })
             })
-          })
-            .then(response => response.json())
-            .then(data => {
-              const rephrasedText = data.rephrased_content;
-              clickedElement.textContent = rephrasedText;
-            });
-        }
-      });
-  });
+              .then(response => {
+                console.log("Response from rephrase:", response);
+                return response.json();
+              })
+              .then(data => {
+                const rephrasedText = data.personalisedContent;
+                const elementToReplace = document.querySelector(data.querySelector);
+
+                if (elementToReplace) {
+                  if (typeof rephrasedText === 'string') {
+                    console.log("Updating text content with:", rephrasedText);
+                    elementToReplace.textContent = rephrasedText;
+                  } else if (rephrasedText instanceof HTMLElement) {
+                    console.log("Replacing element with:", rephrasedText.outerHTML);
+                    elementToReplace.replaceWith(rephrasedText);
+                  } else {
+                    console.error("Unexpected type of rephrasedText:", typeof rephrasedText);
+                  }
+                } else {
+                  console.error("Element not found with the provided querySelector");
+                }
+              });
+          } else {
+            console.log("Variant is not B:", variant);
+          }
+     });
 })();
